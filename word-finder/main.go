@@ -60,6 +60,7 @@ func findMatches(fields, searchTerms []string) map[string]int {
 	for _, st := range searchTerms {
 		for _, field := range fields {
 			if field == st {
+				// Interesting note - because we have declared the values as int, there is a default 0 initialized so we can safely increment the counter
 				matches[st]++
 			}
 		}
