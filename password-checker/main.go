@@ -5,41 +5,59 @@ import (
 	"os"
 )
 
+type User struct {
+	Username string
+	Password string
+}
+
+var Users = [2]User{
+	{Username: "jackie", Password: "1234"},
+	{Username: "donald", Password: "4567"},
+}
+
 const (
-	// Mock usr and pwd to compare against in a db call
-	UserName = "jackie"
-	Password = "1234"
 	// Messages
 	UsageMessage         = "Usage: [username] [password]"
 	AccessDeniedMessage  = "Access denied"
 	AccessGrantedMessage = "Access Granted!"
 )
 
-func getUserAndPassword() (string, string) {
-	return UserName, Password
+func findUser(username string) (*User, error) {
+	for _, user := range Users {
+		if user.Username == username {
+			return &user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func checkPassword(usr *User, password string) error {
+	if usr.Password != password {
+		return fmt.Errorf("invalid Password")
+	}
+
+	return nil
 }
 
 func main() {
-	username, password := getUserAndPassword()
-
-	var usr string
-	var pwd string
-
 	args := os.Args[1:] // remove the go invocation from first argument
 
 	if len(args) < 2 {
 		fmt.Println(UsageMessage)
 		return
 	}
+	usrname, pwd := args[0], args[1]
 
-	usr, pwd = args[0], args[1]
+	user, err := findUser(usrname)
 
-	if username != usr {
+	if err != nil {
 		fmt.Println(AccessDeniedMessage)
 		return
 	}
 
-	if password != pwd {
+	pwdErr := checkPassword(user, pwd)
+
+	if pwdErr != nil {
 		fmt.Println(AccessDeniedMessage)
 		return
 	}
