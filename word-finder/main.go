@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 )
 
@@ -35,8 +34,12 @@ func main() {
 		return
 	}
 
-	for _, m := range matches {
-		fmt.Printf("Match found for `%s` search term\n", m)
+	for st, count := range matches {
+		if count > 1 {
+			fmt.Printf("%d Matches found for `%s`\n", count, st)
+		} else {
+			fmt.Printf("%d Match found for `%s`\n", count, st)
+		}
 	}
 }
 
@@ -51,11 +54,14 @@ func readInput(prompt string) string {
 	return strings.TrimSpace(input)
 }
 
-func findMatches(fields, searchTerms []string) []string {
-	var matches []string
+func findMatches(fields, searchTerms []string) map[string]int {
+	matches := make(map[string]int)
+
 	for _, st := range searchTerms {
-		if slices.Contains(fields, st) {
-			matches = append(matches, st)
+		for _, field := range fields {
+			if field == st {
+				matches[st]++
+			}
 		}
 	}
 	return matches
