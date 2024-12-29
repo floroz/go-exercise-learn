@@ -46,7 +46,7 @@ func checkEmptyFile(path string, outputFile *os.File) {
 
 func main() {
 	// prepare the output file
-	err := os.WriteFile(outputFilename, []byte(nil), 0777)
+	err := os.WriteFile(outputFilename, []byte(nil), 0644)
 
 	if err != nil {
 		panic("failed to clear the output file.")
