@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"math/rand/v2"
 	"reflect"
 	"runtime"
 	"runtime/debug"
@@ -330,4 +332,199 @@ func TestObserveLengthAndCapacity(t *testing.T) {
 	// try to slice the games slice beyond its capacity
 	// Uncommenting the following line will cause a runtime panic
 	// fmt.Println(games[:cap(games)+1])
+}
+
+// EXERCISE: Limit the backing array sharing
+//
+//	GOAL
+//
+//	  Limit the capacity of the slice that is returned
+//	  from the `Read` function. Read on for more details.
+//
+//	WHAT IS THE PROBLEM?
+//
+//	  `Read` function returns a portion of
+//	  its `temps` slice. Below, it saves it to the
+//	  `received` slice.
+//
+//	  `main()` appends to the `received` slice but doing so
+//	  also changes the backing array of the `temps` slice.
+//	  We don't want that.
+//
+//	  `main()` can change the part of the `temps` slice
+//	  that is returned from the `Read()`, but it shouldn't
+//	  be able to change the elements in the rest of the
+//	  `temps`.
+//
+//	WHAT YOU NEED TO DO?
+//
+//	  So you need to limit the capacity of the returned
+//	  slice somehow. Remember: `received` and `temps`
+//	  share the same backing array. So, appending to it
+//	  can overwrite the same backing array.
+//
+// CURRENT
+//
+//	                        | |
+//	                        v v
+//	temps     : [5 10 3 1 3 80 90]
+//	received  : [5 10 3 1 3]
+//	                        ^ ^ append changes the `temps`
+//	                            slice's backing array.
+//
+// EXPECTED
+//
+//	The corrected api package does not allow the `main()` to
+//	change unreturned portion of the temps slice's backing array.
+//	                        |  |
+//	                        v  v
+//	temps     : [5 10 3 25 45 80 90]
+//	received  : [5 10 3 1 3]
+func TestLimitBackingArraySharing(t *testing.T) {
+	// Arrange
+	expectedTemps := []int{5, 10, 3, 25, 45, 80, 90}
+	expectedReceived := []int{5, 10, 3, 1, 3}
+
+	// Act
+	received := Read(0, 3)
+	received = append(received, []int{1, 3}...)
+
+	// Assert
+	if !reflect.DeepEqual(All(), expectedTemps) {
+		t.Errorf("Expected api.temps to be %v, but got %v", expectedTemps, All())
+	}
+	if !reflect.DeepEqual(received, expectedReceived) {
+		t.Errorf("Expected main.received to be %v, but got %v", expectedReceived, received)
+	}
+}
+
+var temps = []int{5, 10, 3, 25, 45, 80, 90}
+
+// Read returns a slice of elements from the temps slice.
+func Read(start, stop int) []int {
+	// ----------------------------------------
+	// RESTRICTIONS — ONLY ADD YOUR CODE IN THIS AREA
+
+	portion := append([]int(nil), temps[start:stop]...)
+
+	// RESTRICTIONS — ONLY ADD YOUR CODE IN THIS AREA
+	// ----------------------------------------
+
+	return portion
+}
+
+// All returns the temps slice
+func All() []int {
+	return temps
+}
+
+// EXERCISE: Fix the memory leak
+//
+//	WARNING
+//
+//	  This is a very difficult exercise. You need to
+//	  do some research on your own to solve it. Please don't
+//	  get discouraged if you can't solve it yet.
+//
+//	GOAL
+//
+//	  In this exercise, your goal is to reduce the memory
+//	  usage. To do that, you need to find and fix the memory
+//	  leak within `main()`.
+//
+//	PROBLEM
+//
+//	  `main()` calls `api.Report()` that reports the current
+//	  memory usage.
+//
+//	  After that, `main()` calls `api.Read()` that returns
+//	  a slice with 10 millions of elements. But you only need
+//	  the last 10 elements of the returned slice.
+//
+//	WHAT YOU NEED TO DO
+//
+//	  You only need to change the code in `main()`. Please
+//	  do not touch the code in `api/api.go`.
+//
+//	CURRENT OUTPUT
+//
+//	  > Memory Usage: 113 KB
+//
+//	  Last 10 elements: [...]
+//
+//	  > Memory Usage: 65651 KB
+//
+//	    + Before `api.Read()` call: It uses 113 KB of memory.
+//
+//	    + After `api.Read()` call : It uses  65 MB of memory.
+//
+//	    + This means that, `main()` never releases the memory.
+//	      This is the leak.
+//
+//	    + Your goal is to release the unused memory. Remember,
+//	      you only need 10 elements but in the current code
+//	      below you have a slice with 10 millions of elements.
+//
+//	EXPECTED OUTPUT
+//
+//	  > Memory Usage: 116 KB
+//
+//	  Last 10 elements: [...]
+//
+//	  > Memory Usage: 118 KB
+//
+//	    + In the expected output, `main()` releases the memory.
+//
+//	      It no longer uses 65 MB of memory. Instead, it only
+//	      uses 118 KB of memory. That's why the second
+//	      `api.Report()` call reports 118 KB.
+//
+//	ADDITIONAL NOTE
+//
+//	  Memory leak means: Your program is using unnecessary
+//	  computer memory. It doesn't release memory that is
+//	  no longer needed.
+//
+//	  See this for more information:
+//	  https://en.wikipedia.org/wiki/Memory_leak
+func TestFixMemoryLeak(t *testing.T) {
+	// Arrange
+	reportMemoryUsage("initial memory usage")
+
+	// Act
+	millions := readLargeSlice()
+
+	reportMemoryUsage("after reading first slice")
+
+	// ✪ ONLY CHANGE THE CODE IN THIS AREA ✪
+	last10 := millions[len(millions)-10:]
+	// I override the slice header pointer to a new backing array that will only have a cap 10 - therefore having Go garbage collecting the backing array with millions of items and 65mb of memory
+	millions = append([]int{}, last10...)
+	fmt.Printf("\nLast 10 elements: %d\n\n", last10)
+	// ✪ ONLY CHANGE THE CODE IN THIS AREA ✪
+
+	reportMemoryUsage("after reading large slice")
+
+	// don't worry about this code.
+	fmt.Fprintln(io.Discard, millions[0])
+}
+
+// readLargeSlice returns a huge slice (allocates ~65 MB of memory)
+func readLargeSlice() []int {
+	// 2 << 22 means 2^(22 + 1)
+	// See this: https://en.wikipedia.org/wiki/Arithmetic_shift
+
+	// Perm function returns a slice with random integers in it.
+	// Here it returns a slice with random integers that contains
+	// 8,388,608 elements. One int value is 8 bytes.
+	// So: 8,388,608 * 8 = ~65MB
+	return rand.Perm(2 << 22)
+}
+
+// reportMemoryUsage cleans the memory and prints the current memory usage
+func reportMemoryUsage(msg string) {
+	var m runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&m)
+	fmt.Printf("[%s] > Memory Usage: %v KB\n", msg, m.Alloc/1024)
 }
