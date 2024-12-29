@@ -77,6 +77,32 @@ func slicesWithNewCopyOfBackingArray() {
 	prettyslice.Show("newAge2", newAge2)
 }
 
+// copyingWithMake demonstrates copying elements from one slice to another
+// using the copy function. The make function is used to create a slice with
+// a specified length. The length must be equal to or greater than the number
+// of elements to be copied, otherwise, the copy operation will not work correctly
+func copyingWithMake() {
+	original := []int{1, 2, 3, 4, 5}
+	var slice = make([]int, 5) // try changing the length to 0
+	prettyslice.Show("slice - before", slice)
+	copy(slice, original)
+	prettyslice.Show("slice - after", slice)
+}
+
+// appendingWithMake demonstrates appending elements from one slice to another
+// using the append function. The make function is used to create a slice with
+// a specified capacity. The length is set to 0 to allow appending elements
+// starting from the beginning. The capacity must be equal to or greater than
+// the number of elements to be appended, otherwise, the append operation will
+// not work correctly.
+func appendingWithMake() {
+	original := []int{1, 2, 3, 4, 5}
+	var slice = make([]int, 0, 5) // try changing the length to 5
+	prettyslice.Show("slice - before", slice)
+	slice = append(slice, original...)
+	prettyslice.Show("slice - after", slice)
+}
+
 func changeArray(data [4]string) {
 	// Array are passed by copies!
 	data[2] = "X"
@@ -117,7 +143,6 @@ func expandCapacity() {
 	prettyslice.Show("extended - after 1 append", extended)
 	extended = append(extended, 12)
 	prettyslice.Show("extended - after 2 append", extended)
-
 }
 
 func main() {
@@ -125,12 +150,11 @@ func main() {
 	prettyslice.PrintElementAddr = true
 	prettyslice.MaxPerLine = 20
 	prettyslice.Width = 150
-	// fmt.Println("*********** SLICES REFERENCING ORIGINAL BACKING ARRAY ***********")
-	// slicesWithBackingArray()
-	// fmt.Println("*********** SLICES COPIED USING APPEND ***********")
-	// slicesWithAppendingfBackingArray()
-	// fmt.Println("*********** SLICES COPIED USING COPY ***********")
-	// slicesWithNewCopyOfBackingArray()
-	// sliceHeaders()
-	// expandCapacity()
+	slicesWithBackingArray()
+	slicesWithAppendingfBackingArray()
+	slicesWithNewCopyOfBackingArray()
+	appendingWithMake()
+	copyingWithMake()
+	sliceHeaders()
+	expandCapacity()
 }
