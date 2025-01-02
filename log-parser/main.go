@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 const (
@@ -30,20 +29,20 @@ func main() {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		for _, token := range strings.Fields(line) {
+	scanner.Split(bufio.ScanWords)
 
-			switch token {
-			case INFO:
-				logSummary[INFO]++
-			case WARN:
-				logSummary[WARN]++
-			case ERROR:
-				logSummary[ERROR]++
-			case FATAL:
-				logSummary[FATAL]++
-			}
+	for scanner.Scan() {
+		token := scanner.Text()
+
+		switch token {
+		case INFO:
+			logSummary[INFO]++
+		case WARN:
+			logSummary[WARN]++
+		case ERROR:
+			logSummary[ERROR]++
+		case FATAL:
+			logSummary[FATAL]++
 		}
 	}
 

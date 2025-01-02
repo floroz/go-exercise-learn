@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -16,19 +15,18 @@ func main() {
 		panic(err)
 	}
 	defer file.Close()
+
 	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanWords)
 
 	for scanner.Scan() {
-		line := scanner.Text()
+		token := scanner.Text()
 
-		for _, token := range strings.Fields(line) {
-			if _, ok := wordSet[token]; !ok {
-				wordSet[token]++
-			}
+		if _, ok := wordSet[token]; !ok {
+			wordSet[token]++
 		}
 	}
-	fmt.Println(wordSet)
 
-	fmt.Printf("%d\n", len(wordSet))
+	fmt.Printf("Found %d unique words.\n", len(wordSet))
 
 }
