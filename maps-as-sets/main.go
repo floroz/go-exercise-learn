@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	wordSet := map[string]uint8{}
+	wordSet := map[string]bool{}
 
 	file, err := os.Open("text.txt")
 	if err != nil {
@@ -20,10 +20,10 @@ func main() {
 	scanner.Split(bufio.ScanWords)
 
 	for scanner.Scan() {
-		token := scanner.Text()
+		word := scanner.Text()
 
-		if _, ok := wordSet[token]; !ok {
-			wordSet[token]++
+		if !wordSet[word] {
+			wordSet[word] = true
 		}
 	}
 
