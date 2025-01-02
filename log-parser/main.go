@@ -1,65 +1,55 @@
+// Copyright © 2018 Inanc Gumus
+// Learn Go Programming Course
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+//
+// For more tutorials  : https://learngoprogramming.com
+// In-person training  : https://www.linkedin.com/in/inancgumus/
+// Follow me on twitter: https://twitter.com/inancgumus
+
 package main
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
-const (
-	INFO  = "INFO"
-	WARN  = "WARN"
-	ERROR = "ERROR"
-	FATAL = "FATAL"
-)
-
+// $ go run . < log.txt
 func main() {
+	p := newParser()
 
-	logSummary := map[string]int{
-		INFO:  0,
-		WARN:  0,
-		ERROR: 0,
-		FATAL: 0,
-	}
+	// Scan the standard-in line by line
+	in := bufio.NewScanner(os.Stdin)
+	for in.Scan() {
+		p.lines++
 
-	file, err := os.Open("logs.txt")
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-nextLine:
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		for _, token := range strings.Fields(line) {
-
-			switch token {
-			case INFO:
-				logSummary[INFO]++
-				continue nextLine // only 1 log level to be matched per line
-			case WARN:
-				logSummary[WARN]++
-				continue nextLine
-			case ERROR:
-				logSummary[ERROR]++
-				continue nextLine
-			case FATAL:
-				logSummary[FATAL]++
-				continue nextLine
-			}
+		parsed, err := parse(p, in.Text())
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
+
+		update(p, parsed)
 	}
 
-	if err := scanner.Err(); err != nil {
-		panic(err)
+	// Print the visits per domain
+	sort.Strings(p.domains)
+
+	fmt.Printf("%-30s %10s\n", "DOMAIN", "VISITS")
+	fmt.Println(strings.Repeat("-", 45))
+
+	for _, domain := range p.domains {
+		parsed := p.sum[domain]
+		fmt.Printf("%-30s %10d\n", domain, parsed.visits)
 	}
 
-	fmt.Println("Logs Summary: ")
-	for k, v := range logSummary {
-		fmt.Printf("%s: %d\n", k, v)
+	// Print the total visits for all domains
+	fmt.Printf("\n%-30s %10d\n", "TOTAL", p.total)
+
+	// Let's handle the error
+	if err := in.Err(); err != nil {
+		fmt.Println("> Err:", err)
 	}
 }
